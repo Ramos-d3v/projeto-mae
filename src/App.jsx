@@ -1,18 +1,18 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import ReactPlayer from 'react-player';
 
 // --- Constants & Assets ---
 const IMAGES = import.meta.glob('./assets/*.{png,jpg,jpeg,svg}', { eager: true });
 const IMAGE_PATHS = Object.values(IMAGES).map((mod) => mod.default || mod);
 
-const HEARTS = [...Array(20)].map((_, i) => ({
+// Reduce hearts for mobile performance
+const HEARTS = [...Array(12)].map((_, i) => ({
   id: i,
   x: Math.random() * 100 + "%",
-  scale: Math.random() * 0.5 + 0.5,
+  scale: Math.random() * 0.4 + 0.4,
   rotate: Math.random() * 360,
-  duration: Math.random() * 5 + 5,
-  delay: Math.random() * 10
+  duration: Math.random() * 4 + 4,
+  delay: Math.random() * 8
 }));
 
 // --- Sub-Components ---
@@ -93,20 +93,37 @@ const ScrollingMessages = ({ scrollYProgress }) => {
   );
 };
 
-const PhotoGallery = () => (
-  <section className="py-32 px-4 md:px-20 bg-slate-900/30 relative z-30">
-    <div className="max-w-7xl mx-auto">
-      <h2 className="text-4xl md:text-6xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-pink-200 to-indigo-200">Nossos Momentos</h2>
-      <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-        {IMAGE_PATHS.map((path, index) => (
-          <motion.div key={index} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: (index % 3) * 0.1 }} viewport={{ once: true }} className="break-inside-avoid rounded-3xl overflow-hidden border border-white/10 hover:border-pink-500/30 transition-all group">
-            <img src={path} alt={`Momento ${index + 1}`} className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
-          </motion.div>
-        ))}
+const PhotoGallery = () => {
+  const memoizedImages = useMemo(() => IMAGE_PATHS, []);
+  
+  return (
+    <section className="py-24 px-4 md:px-20 bg-slate-900/30 relative z-30">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-4xl md:text-6xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-pink-200 to-indigo-200">Nossos Momentos</h2>
+        <div className="columns-2 lg:columns-3 gap-4 space-y-4">
+          {memoizedImages.map((path, index) => (
+            <motion.div 
+              key={index} 
+              initial={{ opacity: 0 }} 
+              whileInView={{ opacity: 1 }} 
+              transition={{ duration: 0.5, delay: (index % 3) * 0.05 }} 
+              viewport={{ once: true, margin: "100px" }} 
+              className="break-inside-avoid rounded-2xl overflow-hidden border border-white/5 bg-slate-800/50 group"
+            >
+              <img 
+                src={path} 
+                alt={`Momento ${index + 1}`} 
+                className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105" 
+                loading="lazy" 
+                decoding="async"
+              />
+            </motion.div>
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 const LoveLetter = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -135,37 +152,6 @@ const LoveLetter = () => {
   );
 };
 
-const MusicPlayer = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  return (
-    <div className="fixed bottom-8 right-8 z-50 flex items-center gap-4">
-      <div className="hidden">
-        <ReactPlayer 
-          url="https://www.youtube.com/watch?v=gzKntWygy8o" 
-          playing={isPlaying}
-          loop={true}
-          volume={0.6}
-          config={{
-            youtube: {
-              playerVars: { autoplay: 0 }
-            }
-          }}
-        />
-      </div>
-      <AnimatePresence>
-        {isPlaying && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-pink-500/30 text-xs font-medium text-pink-300">
-            Tocando: Música Especial 🎵
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setIsPlaying(!isPlaying)} className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-500 ${isPlaying ? 'bg-pink-500 rotate-[360deg]' : 'bg-slate-800'}`}>
-        <span className="text-2xl">{isPlaying ? '📻' : '🔇'}</span>
-      </motion.button>
-    </div>
-  );
-};
-
 const FinalSection = () => (
   <section className="h-[100vh] flex items-center justify-center relative overflow-hidden z-30">
     <div className="text-center z-10">
@@ -186,14 +172,13 @@ export default function App() {
   const { scrollYProgress } = useScroll();
 
   return (
-    <div className="min-h-[300vh] bg-slate-950 text-white selection:bg-pink-500/30 font-sans antialiased">
+    <div className="min-h-[300vh] bg-slate-950 text-white selection:bg-pink-500/30 font-sans antialiased overflow-x-hidden">
       <Background />
       <Hero scrollYProgress={scrollYProgress} />
       <ScrollingMessages scrollYProgress={scrollYProgress} />
       <PhotoGallery />
       <LoveLetter />
       <FinalSection />
-      <MusicPlayer />
     </div>
   );
 }
